@@ -5,6 +5,8 @@ import pandas as pd
 import cv2 as cv
 from PIL import Image
 import pickle
+from sklearn.preprocessing import MinMaxScaler
+
 
 def read_gray_image(dirName, imageName, plotting=False):
     image = cv.imread(f'{dirName}/{imageName}', cv.IMREAD_GRAYSCALE)
@@ -16,7 +18,7 @@ def read_gray_image(dirName, imageName, plotting=False):
     return image
 
 
-def create_training_data(subsample=True):
+def create_training_data(subsample = True, scale = False, picklename = 'training_data'):
     training_data = []
     dirName_fmc = '/Users/chenkangan/Desktop/ME4_FYP/imageGenerate_2022/FMC_variable'
     dirName_pic = '/Users/chenkangan/PycharmProjects/ME4_FYP_py/py_output_fig'
@@ -30,15 +32,17 @@ def create_training_data(subsample=True):
 
         if subsample == True:
             fmc = fmc[0::5]
-        else:
-            pass
+
+        if scale == True:
+            scaler = MinMaxScaler()
+            fmc = scaler.fit_transform(fmc.reshape(-1, fmc.shape[-1])).reshape(fmc.shape)
 
         image = read_gray_image(dirName_pic, imgName, plotting=False)
         # I need to append ([fmc, label])
         training_data.append([fmc, image, index])
         print(f'{round(index/2000, 3)*100}% Completed')
 
-    pickle_out = open("training_data_subsampled.pickle", "wb")
+    pickle_out = open(f"{picklename}.pickle", "wb")
     pickle.dump(training_data, pickle_out)
     pickle_out.close()
 
@@ -47,4 +51,4 @@ def create_training_data(subsample=True):
 
 if __name__ == "__main__":
     # subsample every 5th data
-    training_data = create_training_data(subsample=True)
+    training_data = create_training_data(subsample=True, scale = True, picklename = 'training_data_subsampled_scaled')

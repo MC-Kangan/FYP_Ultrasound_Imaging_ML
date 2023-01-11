@@ -42,13 +42,34 @@ def create_training_data(subsample = True, scale = False, picklename = 'training
         training_data.append([fmc, image, index])
         print(f'{round(index/2000, 3)*100}% Completed')
 
-    pickle_out = open(f"{picklename}.pickle", "wb")
-    pickle.dump(training_data, pickle_out)
-    pickle_out.close()
+    # pickle_out = open(f"{picklename}.pickle", "wb")
+    # pickle.dump(training_data, pickle_out)
+    # pickle_out.close()
 
     return training_data
 
 
 if __name__ == "__main__":
     # subsample every 5th data
-    training_data = create_training_data(subsample=True, scale = True, picklename = 'training_data_subsampled_scaled')
+    # training_data = create_training_data(subsample=True, scale = True, picklename = 'training_data_subsampled_scaled')
+
+
+    # The below code seperate training data into X and y and stored in different pickle files
+    pickle_in = open("training_data_subsampled_scaled.pickle", "rb")
+    train_data = np.array(pickle.load(pickle_in), dtype=object)
+
+    X, y = [], []
+    for features, label, index in train_data:
+        X.append(features)
+        y.append(label)
+    X = np.array(X).reshape(-1, 895, 16, 16)
+    y = np.array(y).reshape(-1, 180, 240, 1)
+
+
+    pickle_out = open("training_data_subsampled_scaled_X.pickle", "wb")
+    pickle.dump(X, pickle_out)
+    pickle_out.close()
+
+    pickle_out = open("training_data_subsampled_scaled_y.pickle", "wb")
+    pickle.dump(y, pickle_out)
+    pickle_out.close()

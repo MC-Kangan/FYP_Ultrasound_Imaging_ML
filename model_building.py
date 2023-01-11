@@ -16,7 +16,7 @@ def get_model(width=895, height=16, depth=16):
 
     x = layers.Conv3D(filters=64, kernel_size=3, activation="relu")(inputs)
     x = layers.MaxPool3D(pool_size=2)(x)
-    x = layers.BatchNormalization()(x)
+    # x = layers.BatchNormalization()(x) # NOT SURE WHAT THIS IS
 
     # x = layers.Conv3D(filters=64, kernel_size=3, activation="relu")(x)
     # x = layers.MaxPool3D(pool_size=2)(x)
@@ -47,48 +47,44 @@ if __name__ == "__main__":
     batch_size = 5
     validation_split = 0.2
 
-    pickle_in = open("training_data_subsampled_scaled.pickle", "rb")
-    train_data = np.array(pickle.load(pickle_in), dtype=object)
-    # try training 500 fmc first
-    train_data = train_data[:500]
-
-    X = train_data[:, 0].tolist()
-    print(train_data[:, 0].shape)
-    print(train_data[:, 0][0].shape)
-    y = train_data[:, 1]
-    print(train_data[:, 1].shape)
+    pickle_in_x = open("training_data_subsampled_scaled_X.pickle", "rb")
+    pickle_in_y = open("training_data_subsampled_scaled_y.pickle", "rb")
+    X = pickle.load(pickle_in_x)
+    y = pickle.load(pickle_in_y)
+    # try training 50 fmc first
+    X = X[:50]
+    y = y[:50]
     y = y / 255
-    y = y.tolist()
 
-    # # Build model.
-    # model = get_model(width=895, height=16, depth=16)
-    # print(model.summary())
-    #
-    # # Compile model.
-    # initial_learning_rate = 0.0001
-    # lr_schedule = keras.optimizers.schedules.ExponentialDecay(
-    #     initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
-    # )
-    # model.compile(
-    #     loss="mean_squared_error",
-    #     optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
-    #     metrics=["acc"],
-    # )
-    #
-    # # Define callbacks.
-    # checkpoint_cb = keras.callbacks.ModelCheckpoint(
-    #     "3d_image_classification.h5", save_best_only=True
-    # )
-    # early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_acc", patience=15)
-    #
-    # # Train the model, doing validation at the end of each epoch
-    # model.fit(
-    #     X, y,
-    #     validation_split=validation_split,
-    #     epochs=epochs,
-    #     shuffle=True,
-    #     verbose=2,
-    #     callbacks=[checkpoint_cb, early_stopping_cb],
-    # )
-    #
-    # model.save('3d_cnn.h5')
+    # Build model.
+    model = get_model(width=895, height=16, depth=16)
+    print(model.summary())
+
+    # Compile model.
+    initial_learning_rate = 0.0001
+    lr_schedule = keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
+    )
+    model.compile(
+        loss="mean_squared_error",
+        optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
+        metrics=["acc"],
+    )
+
+    # Define callbacks.
+    checkpoint_cb = keras.callbacks.ModelCheckpoint(
+        "3d_image_classification.h5", save_best_only=True
+    )
+    early_stopping_cb = keras.callbacks.EarlyStopping(monitor="val_acc", patience=15)
+
+    # Train the model, doing validation at the end of each epoch
+    model.fit(
+        X, y,
+        validation_split=validation_split,
+        epochs=epochs,
+        shuffle=True,
+        verbose=2,
+        callbacks=[checkpoint_cb, early_stopping_cb],
+    )
+
+    model.save('3d_cnn.h5')

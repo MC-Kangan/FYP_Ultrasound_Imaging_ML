@@ -42,11 +42,11 @@ if __name__ == "__main__":
     y = pickle.load(pickle_in_y)
     # try training 50 fmc first
     X = X.reshape(-1, 895, 16, 16, 1)
-    X = X[:50]
+    X = X[:500]
     X = X / 1.75e-14
-    y = y[:50]
+    y = y[:500]
     y = y / 255
-    y = y.reshape(50, -1)
+    y = y.reshape(500, -1)
 
     print(X.shape)
     print(y.shape)
@@ -68,4 +68,4 @@ if __name__ == "__main__":
                         verbose=1,
                         validation_split=0.3)
 
-    model.save('3d_cnn1.h5')
+    model.save('3d_cnn2.h5')

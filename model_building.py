@@ -29,8 +29,8 @@ def get_model(width=895, height=16, depth=16):
     # x = layers.Conv3D(filters=256, kernel_size=3, activation="relu")(x)
     # x = layers.MaxPool3D(pool_size=2)(x)
     # x = layers.BatchNormalization()(x)
-
-    x = layers.GlobalAveragePooling3D()(x)
+    # x = layers.GlobalAveragePooling3D()(x)
+    x = layers.Flatten()(x)
     x = layers.Dense(units=512, activation="relu")(x)
     x = layers.Dropout(0.3)(x)
 
@@ -52,9 +52,12 @@ if __name__ == "__main__":
     X = pickle.load(pickle_in_x)
     y = pickle.load(pickle_in_y)
     # try training 50 fmc first
+    X = X.reshape(-1, 895, 16, 16, 1)
     X = X[:50]
     y = y[:50]
     y = y / 255
+    print(X.shape)
+    print(y.shape)
 
     # Build model.
     model = get_model(width=895, height=16, depth=16)
@@ -66,11 +69,10 @@ if __name__ == "__main__":
         initial_learning_rate, decay_steps=100000, decay_rate=0.96, staircase=True
     )
     model.compile(
-        loss="mean_squared_error",
+        loss=keras.losses.MeanSquaredError(),
         optimizer=keras.optimizers.Adam(learning_rate=lr_schedule),
         metrics=["acc"],
     )
-
     # Define callbacks.
     checkpoint_cb = keras.callbacks.ModelCheckpoint(
         "3d_image_classification.h5", save_best_only=True

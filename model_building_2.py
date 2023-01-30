@@ -28,7 +28,6 @@ def create_model2():
     return model
 
 
-
 if __name__ == "__main__":
     # parameters
     # epochs = 100
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     # Fit data to model
     history = model.fit(X, y,
                         batch_size=30,
-                        epochs=100,
+                        epochs=50,
                         verbose=1,
                         validation_split=0.3)
 

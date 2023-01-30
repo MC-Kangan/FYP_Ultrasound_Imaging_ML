@@ -8,6 +8,11 @@ import pickle
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 
+'''
+Date: 30/1/23
+NOTE! This file is out-dated. This file will generate a training dataset, first combining X and y and then separating X,
+y afterwards, which I believe is inconvenient. Thus, use create_training_data2 for further training data creation.
+'''
 
 def read_gray_image(dirName, imageName, plotting=False):
     image = cv.imread(f'{dirName}/{imageName}', cv.IMREAD_GRAYSCALE)

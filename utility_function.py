@@ -19,10 +19,10 @@ def img_resize(img, scale_percent = 50):
 
     return img_resize
 
-def model_namer(index, num_sample, sub_sample, fmc_scaler, img_resize, img_scaler, activation, epochs):
+def model_namer(dimension, num_sample, sub_sample, fmc_scaler, img_resize, img_scaler, activation, epochs):
     '''
 
-    :param index: nth model
+    :param dimension: dimension of the cnn
     :param num_sample: number of sample trained
     :param sub_sample: fmc (X) sub-sampling frequency. Default, taking every 5th data
     :param fmc_scaler: scaler on fmc (X) value. Default, it is 1.75e-14
@@ -33,7 +33,7 @@ def model_namer(index, num_sample, sub_sample, fmc_scaler, img_resize, img_scale
     :return:
     '''
 
-    D0 = index
+    D0 = dimension
     D1 = num_sample
     D2 = sub_sample
     D3 = fmc_scaler
@@ -42,14 +42,14 @@ def model_namer(index, num_sample, sub_sample, fmc_scaler, img_resize, img_scale
     D6 = activation
     D7 = epochs
 
-    filename = f'3dcnn{D0}_{D1}_{D2}_{D3}_{D4}_{D5}_{D6}_{D7}.h5'
+    filename = f'cnn{D0}d_{D1}_{D2}_{D3}_{D4}_{D5}_{D6}_{D7}.h5'
     return filename
 
 def model_namer_description(filename):
     filename = filename[:-3]
     [name, D1, D2, D3, D4, D5, D6, D7] = filename.split('_')
     message = f'''Model description:\n 
-                - Index: {name[5:]}\n 
+                - Dimension: {name[-2]}\n 
                 - Number of samples: {D1}\n
                 - FMC subsampling frequency: {D2}\n
                 - FMC scaler: {D3}\n
@@ -59,7 +59,7 @@ def model_namer_description(filename):
                 - Epochs: {D7}\n
     '''
     print(message)
-    return {'index': name[5:],
+    return {'Dimension': name[-2],
             'num_sample': D1,
             'sub_sample': D2,
             'fmc_scaler': D3,
@@ -74,5 +74,5 @@ if __name__ == "__main__":
     #
     # y = np.array([img_resize(i, 50) for i in y])
     # print(y.shape)
-    a = model_namer_description('3dcnn4_100_5_1.75e-14_100_1_relu_50.h5')
-    print(type(a))
+    a = model_namer_description('cnn3d_100_5_1.75e-14_100_1_relu_50.h5')
+    print(a)

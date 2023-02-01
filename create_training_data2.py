@@ -35,7 +35,7 @@ def create_training_data(subsample=True, scale=False, picklename='training_data'
     :return:
     '''
     dirName_fmc = '/Users/chenkangan/Desktop/ME4_FYP/imageGenerate_2022/FMC_variable'
-    dirName_pic = '/Users/chenkangan/PycharmProjects/ME4_FYP_py/py_output_fig_no_backwall'
+    dirName_pic = '/Users/chenkangan/PycharmProjects/ME4_FYP_py/py_output_fig_no_backwall_crop'
     print(f'The fmc directory is {dirName_fmc.split("/")[-1]}')
     print(f'The image directory is {dirName_pic.split("/")[-1]}')
 
@@ -53,11 +53,11 @@ def create_training_data(subsample=True, scale=False, picklename='training_data'
             if scale == True:
                 scaler = MinMaxScaler()
                 fmc = scaler.fit_transform(fmc.reshape(-1, fmc.shape[-1])).reshape(fmc.shape)
-
             X.append(fmc)
         if savey:
             imgName = f'defect_{index}_yshift_60.png'
             image = read_gray_image(dirName_pic, imgName, plotting=False)
+            nx, ny = image.shape
             y.append(image)
 
         print(f'{round(index/data_range, 3)*100}% Completed')
@@ -69,7 +69,7 @@ def create_training_data(subsample=True, scale=False, picklename='training_data'
         pickle_out.close()
         return X
     if len(y) != 0:
-        y = np.array(y).reshape(-1, 180, 240)
+        y = np.array(y).reshape(-1, nx, ny)
         pickle_out = open(f"{picklename}_y.pickle", "wb")
         pickle.dump(y, pickle_out)
         pickle_out.close()
@@ -78,10 +78,10 @@ def create_training_data(subsample=True, scale=False, picklename='training_data'
 
 if __name__ == "__main__":
     # subsample every 5th data
-    train_data = create_training_data(subsample = True,
-                                      scale = False,
-                                      picklename = 'data_subsampled_no_backwall_200',
-                                      saveX=True,
+    train_data = create_training_data(subsample=True,
+                                      scale=False,
+                                      picklename='data_subsampled_no_backwall_crop',
+                                      saveX=False,
                                       savey=True,
-                                      data_range = 200)
+                                      data_range = 2000)
 

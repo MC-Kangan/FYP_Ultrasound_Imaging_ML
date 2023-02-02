@@ -87,7 +87,7 @@ def load_ml_model(filename) -> None:
     model = pickle.load(pickle_in)
     return model
 
-def load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50):
+def load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50, shrinkx = True, stack = False):
 
     pickle_in_x = open("training_data_subsampled_X.pickle", "rb")
     pickle_in_y = open("data_subsampled_no_backwall_crop_y.pickle", "rb")
@@ -96,9 +96,19 @@ def load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 5
     if x_dimension == 3:
         X = X.reshape(-1, 895, 16, 16, 1)
     elif x_dimension == 2:
-        X = X.reshape(-1, 895, 16*16, 1)
+        if stack == False:
+            X = X.reshape(-1, 895, 16*16, 1)
+        else:
+            X = X.reshape(-1, 895, 16, 16)
+
+    if shrinkx == True:
+        print(f'The original shape of X is {X.shape}')
+        X = X[:, 30:]
+        print(f'The shape of X after shrinking is {X.shape}')
+    else:
+        print(f'The shape of X is {X.shape}')
+
     X = X / 1.75e-14
-    print(f'The shape of X is {X.shape}')
     # resize y by img_resize_factor
     y = np.array([img_resize(i, img_resize_factor) for i in y])
     y = y.reshape(len(y), -1).astype('int')
@@ -115,7 +125,4 @@ if __name__ == "__main__":
     # filename = filename + '.pkl'
     # print(filename)
     # model_namer_description(filename)
-    X, y = load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50)
-    y = np.squeeze(y[1].reshape(-1, 1))
-    print(y.shape)
-    print(set(y.tolist()))
+    X, y = load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50, shrinkx = True)

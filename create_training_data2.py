@@ -24,7 +24,7 @@ def read_gray_image(dirName, imageName, plotting=False):
     return image
 
 
-def create_training_data(subsample=True, scale=False, picklename='training_data', saveX=True, savey=True, data_range = 2000):
+def create_training_data(subsample=True, picklename='training_data', saveX=True, savey=True, data_range = 3500):
 
     '''
     :param subsample: Subsample the fmc matrix by taking the every 5th data
@@ -49,11 +49,8 @@ def create_training_data(subsample=True, scale=False, picklename='training_data'
 
             if subsample == True:
                 fmc = fmc[0::5]
-
-            if scale == True:
-                scaler = MinMaxScaler()
-                fmc = scaler.fit_transform(fmc.reshape(-1, fmc.shape[-1])).reshape(fmc.shape)
             X.append(fmc)
+            
         if savey:
             imgName = f'defect_{index}_yshift_60.png'
             image = read_gray_image(dirName_pic, imgName, plotting=False)
@@ -67,21 +64,21 @@ def create_training_data(subsample=True, scale=False, picklename='training_data'
         pickle_out = open(f"{picklename}_X.pickle", "wb")
         pickle.dump(X, pickle_out)
         pickle_out.close()
-        return X
+
     if len(y) != 0:
         y = np.array(y).reshape(-1, nx, ny)
         pickle_out = open(f"{picklename}_y.pickle", "wb")
         pickle.dump(y, pickle_out)
         pickle_out.close()
-        return y
+
+    return X, y
 
 
 if __name__ == "__main__":
     # subsample every 5th data
     train_data = create_training_data(subsample=True,
-                                      scale=False,
-                                      picklename='data_subsampled_no_backwall_crop',
+                                      picklename='data_subsampled_no_backwall_crop_3500',
                                       saveX=False,
                                       savey=True,
-                                      data_range = 2000)
+                                      data_range=3500)
 

@@ -89,8 +89,8 @@ def load_ml_model(filename) -> None:
 
 def load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50, shrinkx = True, stack = False):
 
-    pickle_in_x = open("training_data_subsampled_X.pickle", "rb")
-    pickle_in_y = open("data_subsampled_no_backwall_crop_y.pickle", "rb")
+    pickle_in_x = open("data_subsampled_no_backwall_crop_3500_X.pickle", "rb")
+    pickle_in_y = open("data_subsampled_no_backwall_crop_3500_y.pickle", "rb")
     X = pickle.load(pickle_in_x)[:num_sample]
     y = pickle.load(pickle_in_y)[:num_sample]
     if x_dimension == 3:
@@ -125,4 +125,4 @@ if __name__ == "__main__":
     # filename = filename + '.pkl'
     # print(filename)
     # model_namer_description(filename)
-    X, y = load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50, shrinkx = True)
+    X, y = load_training_data(num_sample=3500, x_dimension=3, img_resize_factor=50, shrinkx=True, stack=False)

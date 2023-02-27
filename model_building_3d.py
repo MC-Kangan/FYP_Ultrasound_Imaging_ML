@@ -47,6 +47,7 @@ if __name__ == "__main__":
 
     # Build model.
     input_size, output_size = X.shape[1:], y.shape[1]
+    print(f'Input_size: {input_size}; Output_size: {output_size}')
 
     model = create_model_3D(input_size, output_size)
     print(model.summary())

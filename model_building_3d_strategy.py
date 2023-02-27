@@ -28,50 +28,6 @@ def create_model_3D(input_size, output_size):
 
     model.add(Dense(units=output_size, activation='tanh'))
 
-    return model
-
-
-if __name__ == "__main__":
-
-    x_dimension = 3
-    img_resize_factor = 50
-    epochs = 50
-
-    X, y = load_training_data(num_sample=3200, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
-                              shrinkx=True, stack=False)
-
-    # change the type (in order to build tf pipeline)
-    X = np.asarray(X).astype(np.float32)
-    y = np.asarray(y).astype(np.float32)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
-
-    # Build tensorflow data pipeline for better efficiency
-    # ref: https://github.com/codebasics/deep-learning-keras-tf-tutorial/blob/master/43_distributed_training/dgx_benchamrking_tf_mirrored_stratergy.ipynb
-    train_tf_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-    test_tf_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
-
-    strategy = tf.distribute.MirroredStrategy()
-
-    BATCH_SIZE_PER_REPLICA = 70
-    BATCH_SIZE = BATCH_SIZE_PER_REPLICA * strategy.num_replicas_in_sync
-
-    train_dataset = train_tf_dataset.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
-    test_dataset = test_tf_dataset.batch(BATCH_SIZE)
-
-    modelname = model_namer(dimension=x_dimension, num_sample=len(X), sub_sample=5, fmc_scaler=1.75e-14,
-                            img_resize=img_resize_factor, remark='pooling-lr', epochs=epochs, version=3)
-
-    print(f'The model name is {modelname}')
-
-    # Build model.
-    input_size, output_size = X_train.shape[1:], y_train.shape[1]
-
-    model = create_model_3D(input_size, output_size)
-    print(model.summary())
-
-    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
-
     opt = tf.keras.optimizers.Adam(learning_rate=0.00019409069392840677)
 
     # Compile the model
@@ -81,13 +37,72 @@ if __name__ == "__main__":
 
     model.summary()
 
+    return model
+
+def get_dataset(num_sample, x_dimension, img_resize_factor):
+
+    batch_size = 32
+
+    X, y = load_training_data(num_sample=num_sample, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
+                              shrinkx=True, stack=False)
+
+    # change the type (in order to build tf pipeline)
+    X = np.asarray(X).astype(np.float32)
+    y = np.asarray(y).astype(np.float32)
+
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
+
+    num_val_samples = int(len(x_train) * 0.2)
+
+    # Reserve num_val_samples samples for validation
+    x_val = x_train[-num_val_samples:]
+    y_val = y_train[-num_val_samples:]
+    x_train = x_train[:-num_val_samples]
+    y_train = y_train[:-num_val_samples]
+    input_size, output_size = x_train.shape[1:], y_train.shape[1]
+    return (
+        tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size),
+        tf.data.Dataset.from_tensor_slices((x_val, y_val)).batch(batch_size),
+        tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size),
+        input_size,
+        output_size
+    )
+
+
+if __name__ == "__main__":
+    num_sample = 3200
+    x_dimension = 3
+    img_resize_factor = 50
+    epochs = 50
+
+    # Build tensorflow data pipeline for better efficiency
+
+    modelname = model_namer(dimension=x_dimension, num_sample=num_sample, sub_sample=5, fmc_scaler=1.75e-14,
+                            img_resize=img_resize_factor, remark='pooling-lr', epochs=epochs, version=3)
+
+    print(f'The model name is {modelname}')
+
+
+    # Create a MirroredStrategy.
+    strategy = tf.distribute.MirroredStrategy()
+    print("Number of devices: {}".format(strategy.num_replicas_in_sync))
+
+    # Load datasets
+    train_dataset, val_dataset, test_dataset, input_size, output_size = get_dataset(num_sample, x_dimension,
+                                                                                    img_resize_factor)
+    # Open a strategy scope.
     with strategy.scope():
-        # Fit data to model
-        history = model.fit(train_dataset,
-                            batch_size=BATCH_SIZE,
-                            epochs=epochs,
-                            verbose=1,
-                            callbacks=[callback])
+        # Everything that creates variables should be under the strategy scope.
+        # In general this is only model construction & `compile()`.
+        model = create_model_3D(input_size, output_size)
+
+    # Train the model on all available devices.
+    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
+    model.fit(train_dataset,
+              epochs=epochs,
+              validation_data=val_dataset,
+              verbose=1,
+              callbacks=[callback])
 
 
     save_ml_model(model, modelname)

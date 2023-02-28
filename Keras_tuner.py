@@ -17,13 +17,14 @@ from utility_function import img_resize, model_namer, model_namer_description, s
 
 
 def build_model(hp):
+
     input_size, output_size = (865, 16, 16, 1), 7200
     model = Sequential()
     model.add(Input(input_size))
-    for i in range(hp.Int('layers', 1, 2)):
+    for i in range(hp.Int('layers', 1, 5)):
 
         model.add(Conv3D(filters=hp.Int('filters_' + str(i), min_value=1, max_value=16, step=1),
-                         kernel_size=(hp.Int('kernels_' + str(i), min_value=3, max_value=10, step=1), 3, 3),
+                         kernel_size=(hp.Int('kernels_' + str(i), min_value=3, max_value=5, step=1), 3, 3),
                          activation=hp.Choice("activation_", ["relu", "tanh"])))
 
         if hp.Boolean("dropout"):
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     img_resize_factor = 50
     epochs = 50
 
-    X, y = load_training_data(num_sample=100, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
+    X, y = load_training_data(num_sample=1000, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
                               shrinkx=True, stack=False)
     input_size, output_size = X.shape[1:], y.shape[1]
 
@@ -63,6 +64,7 @@ if __name__ == "__main__":
                          objective=kt.Objective("val_loss", direction="min"),
                          max_epochs=100,
                          factor=3,
+                         overwrite=True,
                          directory='fyp_model_search',
                          project_name='3dcnn_1conv_all')
 

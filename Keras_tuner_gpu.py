@@ -1,7 +1,16 @@
+
+import os
+
+NCPUS = 8
+
+os.environ["OMP_NUM_THREADS"] = str(NCPUS)
+os.environ["OPENBLAS_NUM_THREADS"] = str(NCPUS)
+os.environ["MKL_NUM_THREADS"] = str(NCPUS)
+os.environ["VECLIB_MAXIMUM_THREADS"] = str(NCPUS) 
+os.environ["NUMEXPR_NUM_THREADS"] = str(NCPUS)
 from keras_tuner.tuners import RandomSearch
 from keras_tuner.engine.hyperparameters import HyperParameters
 import keras_tuner as kt
-
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from keras.layers import Conv3D, MaxPool3D, Flatten, Dense, AveragePooling3D
@@ -14,20 +23,26 @@ import numpy as np
 import keras
 import cv2 as cv
 from utility_function import img_resize, model_namer, model_namer_description, save_ml_model, load_ml_model, load_training_data
+from keras import backend as K
+
+
+# config = tf.compat.v1.ConfigProto(intra_op_parallelism_threads=8,
+#                        inter_op_parallelism_threads=8)
+# sess = tf.compat.v1.Session(config=config)
+# K.set_session(sess)
 
 
 def build_model(hp):
-
-    input_size, output_size = (865, 16, 16, 1), 7200
+    input_size, output_size = (895, 16, 16, 1), 7200
     model = Sequential()
     model.add(Input(input_size))
-    for i in range(hp.Int('layers', 1, 5)):
+    for i in range(hp.Int('layers', 1, 2)):
 
         model.add(Conv3D(filters=hp.Int('filters_' + str(i), min_value=1, max_value=16, step=1),
                          kernel_size=(hp.Int('kernels_' + str(i), min_value=3, max_value=5, step=1), 3, 3),
-                         activation=hp.Choice("activation_" + str(i), ["relu", "tanh"])))
+                         activation=hp.Choice('activation_' + str(i), ["relu", "tanh"])))
 
-        if hp.Boolean("dropout"):
+        if hp.Boolean("dropout_" + str(i)):
             model.add(Dropout(rate=0.1))
 
         if hp.Choice('pooling_' + str(i), ['avg', 'max']) == 'max':
@@ -36,9 +51,10 @@ def build_model(hp):
             model.add(AveragePooling3D())
 
     model.add(Flatten())
-    model.add(Dense(units=hp.Int('dense_units_', min_value=1000, max_value=2000, step=500), activation='softsign'))
-    if hp.Boolean("dropout2"):
-        model.add(Dropout(rate=0.1))
+    for j in range(hp.Int('dense_layers', 1, 2)):
+        model.add(Dense(units=hp.Int('dense_units_'+str(j), min_value=500, max_value=2000, step=500), activation='softsign'))
+        if hp.Boolean("dropout2_"+ str(j)):
+            model.add(Dropout(rate=0.1))
 
     model.add(Dense(units=output_size, activation='tanh'))
 
@@ -52,30 +68,48 @@ def build_model(hp):
 
 
 if __name__ == "__main__":
+
+    # Limit TensorFlow to use at most 8 CPU cores
+    # config = tf.compat.v1.ConfigProto(device_count={'CPU': 4})
+
+    # Set the session configuration
+    # sess = tf.compat.v1.Session(config=config)
+
+    print('Message 1:')
+    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+    print('______')
+    
     x_dimension = 3
     img_resize_factor = 50
-    epochs = 50
+    epochs = 100
 
-    X, y = load_training_data(num_sample=1000, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
-                              shrinkx=True, stack=False)
+    X, y = load_training_data(num_sample=2000, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
+                              shrinkx=False, stack=False)
     input_size, output_size = X.shape[1:], y.shape[1]
 
     tuner = kt.Hyperband(build_model,
                          objective=kt.Objective("val_loss", direction="min"),
                          max_epochs=100,
                          factor=3,
-                         overwrite=True,
                          directory='fyp_model_search',
-                         project_name='3dcnn_1conv_all')
+                         project_name='3dcnn_1conv_all_gpu_2')
 
     stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
 
+    #config = tf.compat.v1.ConfigProto(
+    #    intra_op_parallelism_threads=1,
+    #    inter_op_parallelism_threads=1
+    #)
+    
     tuner.search(x=X,
                  y=y,
                  epochs=epochs,
                  batch_size=32,
                  validation_split=0.2,
-                 callbacks=[stop_early]
+                 callbacks=[stop_early],
+                 workers=NCPUS
                  )
 
     result = tuner.results_summary()
+
+    # sess.close()

@@ -1,7 +1,8 @@
 
 import os
 
-NCPUS = 8
+# Declare the global variable, NCPUS: number of cpus
+NCPUS = 12
 
 os.environ["OMP_NUM_THREADS"] = str(NCPUS)
 os.environ["OPENBLAS_NUM_THREADS"] = str(NCPUS)
@@ -60,8 +61,6 @@ def build_model(hp):
         model.add(Input(input_size))
 
         for i in range(hp.Int('layers', 1, 5)):
-
-
             model.add(Conv2D(filters=hp.Int('filters_' + str(i), min_value=1, max_value=16, step=1),
                              kernel_size=(hp.Int('kernels_' + str(i), min_value=3, max_value=5, step=1), 3),
                              activation=hp.Choice('activation1_' + str(i), ["relu", "tanh"])))
@@ -102,6 +101,7 @@ if __name__ == "__main__":
     img_resize_factor = 50
     epochs = 100
 
+    # change num_sample = 2000 in practise (dont forget)
     X, y = load_training_data(num_sample=100, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
                               shrinkx=False, stack=False)
     input_size, output_size = X.shape[1:], y.shape[1]

@@ -64,7 +64,7 @@ if __name__ == "__main__":
                         batch_size=30,
                         epochs=epochs,
                         verbose=1,
-                        validation_split=0.3,
+                        validation_split=0.2,
                         callbacks=[callback])
 
     save_ml_model(model, modelname)

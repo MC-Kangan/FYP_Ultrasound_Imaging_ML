@@ -87,7 +87,7 @@ def load_ml_model(filename) -> None:
     model = pickle.load(pickle_in)
     return model
 
-def load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50, shrinkx = True, stack = False):
+def load_training_data(num_sample = 2000, x_dimension = 3, img_resize_factor = 50, shrinkx = False, stack = False):
 
     pickle_in_x = open("data_subsampled_no_backwall_crop_3500_X.pickle", "rb")
     pickle_in_y = open("data_subsampled_no_backwall_crop_3500_y.pickle", "rb")

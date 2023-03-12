@@ -1,7 +1,19 @@
 
+
+
 import os
+import sys
+
+HPC = True
+print('cmd entry:', sys.argv)
 # Declare the global variable, NCPUS: number of cpus
-NCPUS = 4
+
+if HPC == False:
+    NCPUS = int(sys.argv[1])
+    MODEL_NUM = int(sys.argv[2])
+else:
+    NCPUS = 4
+    MODEL_NUM = 5
 
 os.environ["OMP_NUM_THREADS"] = str(NCPUS)
 os.environ["OPENBLAS_NUM_THREADS"] = str(NCPUS)
@@ -9,6 +21,7 @@ os.environ["MKL_NUM_THREADS"] = str(NCPUS)
 os.environ["VECLIB_MAXIMUM_THREADS"] = str(NCPUS)
 os.environ["NUMEXPR_NUM_THREADS"] = str(NCPUS)
 
+import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from keras.layers import Conv3D, MaxPool3D, Flatten, Dense, AveragePooling3D
@@ -95,14 +108,14 @@ if __name__ == "__main__":
 
     x_dimension = 3
     img_resize_factor = 50
-    epochs = 1
+    epochs = 10
 
     X, y = load_training_data(num_sample=10, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
                               shrinkx=False, stack=False)
 
     print('')
 
-    model_num_list = [5]
+    model_num_list = [MODEL_NUM]
     model_name_dict = {1: '3D_2450_o7167535',
                        2: '3D_2000_o7158970',
                        3: '3D_2000_o7127128',
@@ -125,7 +138,8 @@ if __name__ == "__main__":
         # K-fold Cross Validation model evaluation
         fold_no = 1
 
-        loss_lst, val_loss_lst = [], []
+        final_loss_lst, final_val_loss_lst = [], []
+        result_dict = {}
 
         for train, test in kfold.split(X, y):
             print(f'train_size: {X[train].shape}; test_size: {y[train].shape}')
@@ -150,17 +164,24 @@ if __name__ == "__main__":
 
             # Generate generalization metrics
             scores = model.evaluate(X[test], y[test], verbose=0)
-            loss = train_history.history['loss'][0]
-            val_loss = train_history.history['val_loss'][0]
+            loss = train_history.history['loss'][-1]
+            val_loss = train_history.history['val_loss'][-1]
 
-            loss_lst.append(loss)
-            val_loss_lst.append(val_loss)
+            result_dict[f'loss_{fold_no}'] = train_history.history['loss']
+            result_dict[f'Val_loss_{fold_no}'] = train_history.history['val_loss']
+
+            final_loss_lst.append(loss)
+            final_val_loss_lst.append(val_loss)
             print(f'Score_for_fold_{fold_no} - loss: {loss} - val_loss: {val_loss}')
 
             # Increase fold number
             fold_no = fold_no + 1
 
-        print(f'Model_{modelname} - average_loss: {np.mean(loss_lst)} - average_val_loss: {np.mean(val_loss_lst)}')
+        result_df = pd.DataFrame(result_dict)
+        filename = f'{modelname}_training_log.csv'
+        result_df.to_csv(f'NN_model/{filename}')
+
+        print(f'Model_{modelname} - average_loss: {np.mean(final_loss_lst)} - average_val_loss: {np.mean(final_val_loss_lst)}')
         print('') # print an empty line
 
         # Save the model

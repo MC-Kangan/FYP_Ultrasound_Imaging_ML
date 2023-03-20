@@ -1,4 +1,4 @@
-
+# This file train a single model without cross-validation
 
 
 import os
@@ -149,54 +149,47 @@ if __name__ == "__main__":
         input_size, output_size = X.shape[1:], y.shape[1]
         print(f'Input_size: {input_size}; Output_size: {output_size}')
 
-        num_folds = 5
-
-        # Define the K-fold Cross Validator
-        kfold = KFold(n_splits=num_folds, shuffle=True)
-
-        # K-fold Cross Validation model evaluation
-        fold_no = 1
-
         final_loss_lst, final_val_loss_lst = [], []
         result_dict = {}
 
-        for train, test in kfold.split(X, y):
-            # There is an error here, test size should be X[test].shape, y[train].shape is still the training size
-            # This might not be correctly in the training log, but it will not affect the result
-            print(f'Train_size: {X[train].shape}; Test_size: {y[train].shape}')
+        fold_no = 1
 
-            model = create_model_2D(input_size, output_size, model_num = i)
-            # print(model.summary())
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-            callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
+        # There is an error here, test size should be X[test].shape, y[train].shape is still the training size
+        # This might not be correctly in the training log, but it will not affect the result
 
-            # Generate a print
-            print('------------------------------------------------------------------------')
-            print(f'Training for fold {fold_no} ...')
+        print(f'Train_size: {X_train.shape}; Test_size: {y_train.shape}')
 
-            # Fit data to model
-            train_history = model.fit(X[train], y[train],
-                                batch_size=32,
-                                epochs=epochs,
-                                verbose=1,
-                                validation_split=0.2,
-                                callbacks=[callback],
-                                workers=NCPUS)
+        model = create_model_2D(input_size, output_size, model_num = i)
+        # print(model.summary())
 
-            # Generate generalization metrics
-            scores = model.evaluate(X[test], y[test], verbose=0)
-            loss = train_history.history['loss'][-1]
-            val_loss = train_history.history['val_loss'][-1]
+        callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
 
-            result_dict[f'loss_{fold_no}'] = train_history.history['loss']
-            result_dict[f'Val_loss_{fold_no}'] = train_history.history['val_loss']
+        # Generate a print
+        print('------------------------------------------------------------------------')
 
-            final_loss_lst.append(loss)
-            final_val_loss_lst.append(val_loss)
-            print(f'Score_for_fold_{fold_no} - loss: {loss} - val_loss: {val_loss}')
+        # Fit data to model
+        train_history = model.fit(X_train, y_train,
+                            batch_size=32,
+                            epochs=epochs,
+                            verbose=1,
+                            validation_split=0.2,
+                            callbacks=[callback],
+                            workers=NCPUS)
 
-            # Increase fold number
-            fold_no = fold_no + 1
+        # Generate generalization metrics
+        scores = model.evaluate(X_test, y_test, verbose=0)
+        print(f'The score is {scores}')
+        loss = train_history.history['loss'][-1]
+        val_loss = train_history.history['val_loss'][-1]
+
+        result_dict[f'loss_{fold_no}'] = train_history.history['loss']
+        result_dict[f'Val_loss_{fold_no}'] = train_history.history['val_loss']
+
+        final_loss_lst.append(loss)
+        final_val_loss_lst.append(val_loss)
+        print(f'Score_for_fold_{fold_no} - loss: {loss} - val_loss: {val_loss}')
 
         result_df = pd.DataFrame(result_dict)
         filename = f'{modelname}_kv_training_log.csv'
@@ -208,4 +201,5 @@ if __name__ == "__main__":
         # Save the model
         if save == True:
             save_ml_model(model, modelname)
+
 

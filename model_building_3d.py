@@ -150,6 +150,9 @@ if __name__ == "__main__":
         result_dict = {}
 
         for train, test in kfold.split(X, y):
+
+            # There is an error here, test size should be X[test].shape, y[train].shape is still the training size
+            # This might not be correctly in the training log, but it will not affect the result
             print(f'Train_size: {X[train].shape}; Test_size: {y[train].shape}')
 
             model = create_model_3D(input_size, output_size, model_num = i)

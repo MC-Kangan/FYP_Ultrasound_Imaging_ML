@@ -4,11 +4,11 @@
 import os
 import sys
 
-HPC = True
+HPC = False
 print('cmd entry:', sys.argv)
 # Declare the global variable, NCPUS: number of cpus
 
-if HPC == False:
+if HPC == True:
     NCPUS = int(sys.argv[1])
     MODEL_NUM = int(sys.argv[2])
 else:
@@ -108,9 +108,17 @@ if __name__ == "__main__":
 
     x_dimension = 3
     img_resize_factor = 50
-    epochs = 10
 
-    X, y = load_training_data(num_sample=10, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
+    if HPC == True:
+        epochs = 100
+        num_sample = 2450
+        save = True
+    else:
+        epochs = 10
+        num_sample = 10
+        save = False
+
+    X, y = load_training_data(num_sample=num_sample, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
                               shrinkx=False, stack=False)
 
     print('')
@@ -142,7 +150,7 @@ if __name__ == "__main__":
         result_dict = {}
 
         for train, test in kfold.split(X, y):
-            print(f'train_size: {X[train].shape}; test_size: {y[train].shape}')
+            print(f'Train_size: {X[train].shape}; Test_size: {y[train].shape}')
 
             model = create_model_3D(input_size, output_size, model_num = i)
             # print(model.summary())
@@ -178,15 +186,15 @@ if __name__ == "__main__":
             fold_no = fold_no + 1
 
         result_df = pd.DataFrame(result_dict)
-        filename = f'{modelname}_training_log.csv'
+        filename = f'{modelname}_kv_training_log.csv'
         result_df.to_csv(f'NN_model/{filename}')
 
         print(f'Model_{modelname} - average_loss: {np.mean(final_loss_lst)} - average_val_loss: {np.mean(final_val_loss_lst)}')
         print('') # print an empty line
 
         # Save the model
-        # save_ml_model(model, modelname)
-
+        if save == True:
+            save_ml_model(model, modelname)
 
 
 

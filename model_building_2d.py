@@ -1,10 +1,10 @@
-
-
+# Last update: 26/5/23
+# RUN ON HPC
 
 import os
 import sys
 
-HPC = False
+HPC = True
 print('cmd entry:', sys.argv)
 # Declare the global variable, NCPUS: number of cpus
 
@@ -161,9 +161,7 @@ if __name__ == "__main__":
         result_dict = {}
 
         for train, test in kfold.split(X, y):
-            # There is an error here, test size should be X[test].shape, y[train].shape is still the training size
-            # This might not be correctly in the training log, but it will not affect the result
-            print(f'Train_size: {X[train].shape}; Test_size: {y[train].shape}')
+            print(f'Train_size: {X[train].shape}; Test_size: {X[test].shape}')
 
             model = create_model_2D(input_size, output_size, model_num = i)
             # print(model.summary())
@@ -179,7 +177,7 @@ if __name__ == "__main__":
                                 batch_size=32,
                                 epochs=epochs,
                                 verbose=1,
-                                validation_split=0.2,
+                                validation_data=(X[test], y[test]),
                                 callbacks=[callback],
                                 workers=NCPUS)
 
@@ -187,6 +185,8 @@ if __name__ == "__main__":
             scores = model.evaluate(X[test], y[test], verbose=0)
             loss = train_history.history['loss'][-1]
             val_loss = train_history.history['val_loss'][-1]
+
+            print(f'Score_by_model_evaluate_of_fold_{fold_no}: {model.metrics_names[0]} of {scores[0]}; {model.metrics_names[1]} of {scores[1]*100}%')
 
             result_dict[f'loss_{fold_no}'] = train_history.history['loss']
             result_dict[f'Val_loss_{fold_no}'] = train_history.history['val_loss']
@@ -199,13 +199,13 @@ if __name__ == "__main__":
             fold_no = fold_no + 1
 
         result_df = pd.DataFrame(result_dict)
-        filename = f'{modelname}_kv_training_log.csv'
+        filename = f'{modelname}_kv_training_log_v2.csv'
         result_df.to_csv(f'NN_model/{filename}')
 
         print(f'Model_{modelname} - average_loss: {np.mean(final_loss_lst)} - average_val_loss: {np.mean(final_val_loss_lst)}')
         print('') # print an empty line
 
         # Save the model
-        if save == True:
-            save_ml_model(model, modelname)
+        # if save == True:
+            # save_ml_model(model, modelname)
 

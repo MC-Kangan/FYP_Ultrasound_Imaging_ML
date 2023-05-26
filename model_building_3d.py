@@ -1,10 +1,10 @@
-
-
+# Last update 26/5/23
+# RUN ON HPC
 
 import os
 import sys
 
-HPC = False
+HPC = True
 print('cmd entry:', sys.argv)
 # Declare the global variable, NCPUS: number of cpus
 
@@ -33,14 +33,15 @@ import numpy as np
 import keras
 import cv2 as cv
 from sklearn.model_selection import KFold
-from utility_function import img_resize, model_namer, model_namer_description, save_ml_model, load_ml_model, load_training_data
+from utility_function import img_resize, model_namer, model_namer_description, save_ml_model, load_ml_model, \
+    load_training_data
+
 
 def create_model_3D(input_size, output_size, model_num):
-
     model = Sequential()
     model.add(Input(input_size))
 
-    if model_num == 1: # 3D_2450_o7167535
+    if model_num == 1:  # 3D_2450_o7167535
         model.add(Conv3D(filters=6, kernel_size=(4, 3, 3), strides=(1, 1, 1), activation='tanh'))
         model.add(Dropout(0.1))
         model.add(MaxPool3D())
@@ -52,7 +53,7 @@ def create_model_3D(input_size, output_size, model_num):
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 2: # 3D_2000_o7158970
+    elif model_num == 2:  # 3D_2000_o7158970
         model.add(Conv3D(filters=2, kernel_size=(5, 3, 3), strides=(1, 1, 1), activation='relu'))
         model.add(MaxPool3D())
         model.add(Flatten())
@@ -64,7 +65,7 @@ def create_model_3D(input_size, output_size, model_num):
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 3: # 3D_2000_o7127128
+    elif model_num == 3:  # 3D_2000_o7127128
         model.add(Conv3D(filters=10, kernel_size=(5, 3, 3), strides=(1, 1, 1), activation='relu'))
         model.add(MaxPool3D())
         model.add(Flatten())
@@ -75,7 +76,7 @@ def create_model_3D(input_size, output_size, model_num):
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 4: # 3D_2000_o7121864
+    elif model_num == 4:  # 3D_2000_o7121864
         model.add(Conv3D(filters=5, kernel_size=(4, 3, 3), strides=(1, 1, 1), activation='tanh'))
         model.add(Dropout(0.1))
         model.add(MaxPool3D())
@@ -89,7 +90,7 @@ def create_model_3D(input_size, output_size, model_num):
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 5: # 3D_2000_o7127128-2
+    elif model_num == 5:  # 3D_2000_o7127128-2
         model.add(Conv3D(filters=4, kernel_size=(3, 3, 3), strides=(1, 1, 1), activation='tanh'))
         model.add(Dropout(0.1))
         model.add(MaxPool3D())
@@ -108,17 +109,9 @@ if __name__ == "__main__":
 
     x_dimension = 3
     img_resize_factor = 50
+    epochs = 100
 
-    if HPC == True:
-        epochs = 100
-        num_sample = 2450
-        save = True
-    else:
-        epochs = 10
-        num_sample = 10
-        save = False
-
-    X, y = load_training_data(num_sample=num_sample, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
+    X, y = load_training_data(num_sample=2450, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
                               shrinkx=False, stack=False)
 
     print('')
@@ -150,12 +143,9 @@ if __name__ == "__main__":
         result_dict = {}
 
         for train, test in kfold.split(X, y):
+            print(f'Train_size: {X[train].shape}; Test_size: {X[test].shape}')
 
-            # There is an error here, test size should be X[test].shape, y[train].shape is still the training size
-            # This might not be correctly in the training log, but it will not affect the result
-            print(f'Train_size: {X[train].shape}; Test_size: {y[train].shape}')
-
-            model = create_model_3D(input_size, output_size, model_num = i)
+            model = create_model_3D(input_size, output_size, model_num=i)
             # print(model.summary())
 
             callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
@@ -166,17 +156,20 @@ if __name__ == "__main__":
 
             # Fit data to model
             train_history = model.fit(X[train], y[train],
-                                batch_size=32,
-                                epochs=epochs,
-                                verbose=1,
-                                validation_split=0.2,
-                                callbacks=[callback],
-                                workers=NCPUS)
+                                      batch_size=32,
+                                      epochs=epochs,
+                                      verbose=1,
+                                      validation_data=(X[test], y[test]),
+                                      callbacks=[callback],
+                                      workers=NCPUS)
 
             # Generate generalization metrics
             scores = model.evaluate(X[test], y[test], verbose=0)
             loss = train_history.history['loss'][-1]
             val_loss = train_history.history['val_loss'][-1]
+
+            print(
+                f'Score_by_model_evaluate_of_fold_{fold_no}: {model.metrics_names[0]} of {scores[0]}; {model.metrics_names[1]} of {scores[1] * 100}%')
 
             result_dict[f'loss_{fold_no}'] = train_history.history['loss']
             result_dict[f'Val_loss_{fold_no}'] = train_history.history['val_loss']
@@ -189,15 +182,18 @@ if __name__ == "__main__":
             fold_no = fold_no + 1
 
         result_df = pd.DataFrame(result_dict)
-        filename = f'{modelname}_kv_training_log.csv'
+        filename = f'{modelname}_kv_training_log_v2.csv'
         result_df.to_csv(f'NN_model/{filename}')
 
-        print(f'Model_{modelname} - average_loss: {np.mean(final_loss_lst)} - average_val_loss: {np.mean(final_val_loss_lst)}')
-        print('') # print an empty line
+        print(
+            f'Model_{modelname} - average_loss: {np.mean(final_loss_lst)} - average_val_loss: {np.mean(final_val_loss_lst)}')
+        print('')  # print an empty line
 
         # Save the model
-        if save == True:
-            save_ml_model(model, modelname)
+
+        # if save == True:
+        # save_ml_model(model, modelname)
+
 
 
 

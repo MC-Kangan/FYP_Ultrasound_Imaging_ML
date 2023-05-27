@@ -1,4 +1,4 @@
-# Last edit: 26/5/23
+# Last update: 26/5/2023
 # This file train a single model without cross-validation
 
 
@@ -12,6 +12,7 @@ print('cmd entry:', sys.argv)
 if HPC == True:
     NCPUS = int(sys.argv[1])
     MODEL_NUM = int(sys.argv[2])
+    save = True
 else:
     NCPUS = 4
     MODEL_NUM = 1
@@ -25,7 +26,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = str(NCPUS)
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from keras.layers import Conv2D, MaxPool2D, Flatten, Dense, AveragePooling2D
+from keras.layers import Conv3D, MaxPool3D, Flatten, Dense, AveragePooling3D
 from keras.layers import Dropout, Input, BatchNormalization
 from sklearn.model_selection import train_test_split
 from keras.models import Model
@@ -37,78 +38,67 @@ from sklearn.model_selection import KFold
 from utility_function import img_resize, model_namer, model_namer_description, save_ml_model, load_ml_model, load_training_data
 
 
-def create_model_2D(input_size, output_size, model_num):
-
+def create_model_3D(input_size, output_size, model_num):
     model = Sequential()
     model.add(Input(input_size))
 
-    if model_num == 1: # 2D_2450_o7165279-1
-        model.add(Conv2D(filters=6, kernel_size=(3, 3), strides=(1, 1), activation='tanh'))
+    if model_num == 1:  # 3D_2450_o7167535
+        model.add(Conv3D(filters=6, kernel_size=(4, 3, 3), strides=(1, 1, 1), activation='tanh'))
         model.add(Dropout(0.1))
-        model.add(MaxPool2D())
+        model.add(MaxPool3D())
         model.add(Flatten())
-        model.add(Dense(units=1500, activation='tanh'))
+        model.add(Dense(units=2000, activation='tanh'))
         model.add(Dense(units=output_size, activation='tanh'))
-        learning_rate = 0.00014667421968330278
+        learning_rate = 0.00019617145132549103
         model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 2: # 2D_2450_o7165279-3
-        model.add(Conv2D(filters=4, kernel_size=(4, 3), strides=(1, 1), activation='relu'))
-        model.add(Dropout(0.1))
-        model.add(MaxPool2D())
+    elif model_num == 2:  # 3D_2000_o7158970
+        model.add(Conv3D(filters=2, kernel_size=(5, 3, 3), strides=(1, 1, 1), activation='relu'))
+        model.add(MaxPool3D())
         model.add(Flatten())
-        model.add(Dense(units=500, activation='softsign'))
+        model.add(Dense(units=1500, activation='softsign'))
         model.add(Dropout(0.1))
-        model.add(Dense(units=1000, activation='tanh'))
         model.add(Dense(units=output_size, activation='tanh'))
-        learning_rate = 0.00014148826675114122
+        learning_rate = 0.00011146694480809503
         model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 3: # 2D_2450_o7165279-4
-        model.add(Conv2D(filters=16, kernel_size=(4, 3), strides=(1, 1), activation='tanh'))
-        model.add(Dropout(0.1))
-        model.add(MaxPool2D())
-        model.add(Conv2D(filters=12, kernel_size=(3, 3), strides=(1, 1), activation='relu'))
-        model.add(Dropout(0.1))
-        model.add(MaxPool2D())
+    elif model_num == 3:  # 3D_2000_o7127128
+        model.add(Conv3D(filters=10, kernel_size=(5, 3, 3), strides=(1, 1, 1), activation='relu'))
+        model.add(MaxPool3D())
         model.add(Flatten())
-        model.add(Dense(units=1000, activation='tanh'))
-        model.add(Dropout(0.1))
+        model.add(Dense(units=1500, activation='softsign'))
         model.add(Dense(units=output_size, activation='tanh'))
-        learning_rate = 0.00018840040300474622
+        learning_rate = 0.00017533560552392052
         model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
 
-    elif model_num == 4: # 2D_2450_o7165279-5
-        model.add(Conv2D(filters=14, kernel_size=(5, 3), strides=(1, 1), activation='tanh'))
+    elif model_num == 4:  # 3D_2000_o7121864
+        model.add(Conv3D(filters=5, kernel_size=(4, 3, 3), strides=(1, 1, 1), activation='tanh'))
         model.add(Dropout(0.1))
-        model.add(MaxPool2D())
-        model.add(Conv2D(filters=15, kernel_size=(5, 3), strides=(1, 1), activation='relu'))
-        model.add(MaxPool2D())
+        model.add(MaxPool3D())
+        model.add(Flatten())
+        model.add(Dense(units=1000, activation='softsign'))
+        model.add(Dropout(0.1))
+        model.add(Dense(units=output_size, activation='tanh'))
+
+        learning_rate = 0.0001735701471314462
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+                      loss='mean_squared_error',
+                      metrics=[tf.keras.metrics.MeanSquaredError()])
+
+    elif model_num == 5:  # 3D_2000_o7127128-2
+        model.add(Conv3D(filters=4, kernel_size=(3, 3, 3), strides=(1, 1, 1), activation='tanh'))
+        model.add(Dropout(0.1))
+        model.add(MaxPool3D())
         model.add(Flatten())
         model.add(Dense(units=1000, activation='softsign'))
         model.add(Dense(units=output_size, activation='tanh'))
-        learning_rate = 0.0003990110946355407
-        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
-                      loss='mean_squared_error',
-                      metrics=[tf.keras.metrics.MeanSquaredError()])
-
-    elif model_num == 5: # 2D_2450_o7165279-7
-        model.add(Conv2D(filters=10, kernel_size=(4, 3), strides=(1, 1), activation='tanh'))
-        model.add(Dropout(0.1))
-        model.add(AveragePooling2D())
-        model.add(Conv2D(filters=8, kernel_size=(3, 3), strides=(1, 1), activation='relu'))
-        model.add(AveragePooling2D())
-        model.add(Flatten())
-        model.add(Dense(units=2000, activation='softsign'))
-        model.add(Dropout(0.1))
-        model.add(Dense(units=output_size, activation='tanh'))
-        learning_rate = 0.0001002744916948696
+        learning_rate = 0.0001960411264334168
         model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
                       loss='mean_squared_error',
                       metrics=[tf.keras.metrics.MeanSquaredError()])
@@ -118,29 +108,22 @@ def create_model_2D(input_size, output_size, model_num):
 
 if __name__ == "__main__":
 
-    x_dimension = 2
+    x_dimension = 3
     img_resize_factor = 50
+    epochs = 100
 
-    if HPC == True:
-        epochs = 100
-        num_sample = 2450
-        save = True
-    else:
-        epochs = 10
-        num_sample = 10
-        save = False
-
-    X, y = load_training_data(num_sample=num_sample, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
+    X, y = load_training_data(num_sample=2450, x_dimension=x_dimension, img_resize_factor=img_resize_factor,
                               shrinkx=False, stack=False)
 
     print('')
 
     model_num_list = [MODEL_NUM]
-    model_name_dict = {1: '2D_2450_o7165279-1',
-                       2: '2D_2450_o7165279-3',
-                       3: '2D_2450_o7165279-4',
-                       4: '2D_2450_o7165279-5',
-                       5: '2D_2450_o7165279-7'}
+    model_name_dict = {1: '3D_2450_o7167535',
+                       2: '3D_2000_o7158970',
+                       3: '3D_2000_o7127128',
+                       4: '3D_2000_o7121864',
+                       5: '3D_2000_o7127128-2'}
+
 
     for i in model_num_list:
         modelname = model_name_dict[i]
@@ -157,9 +140,10 @@ if __name__ == "__main__":
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
+
         print(f'Train_size: {X_train.shape}; Test_size: {X_test.shape}')
 
-        model = create_model_2D(input_size, output_size, model_num = i)
+        model = create_model_3D(input_size, output_size, model_num = i)
         # print(model.summary())
 
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=100)
